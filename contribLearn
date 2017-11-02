@@ -1,0 +1,34 @@
+import numpy as np
+import tensorflow as tf
+print(tf.__version__)
+
+def get_input_fn(dataset_split, batch_size, capacity = 10000, min_after_dequeue=3000):
+    def _input_fn():
+        images_batch, labels_batch = tf.train.shuffle_batch(
+            tensors=[dataset_split.images,dataset_split.labels.astype(np.int32)],
+            batch_size= batch_size,
+            capacity = capacity,
+            min_after_dequeue=min_after_dequeue,
+            enqueue_many=True,
+            num_threads=4
+        )
+        features_map = {'images':images_batch}
+        return features_map, labels_batch
+
+    return _input_fn
+
+data = tf.contrib.learn.datasets.mnist.load_mnist()
+train_input_fn = get_input_fn(data.train, batch_size=256)
+eval_input_fn = get_input_fn(data.validation, batch_size=5000)
+
+tf.squeeze()
+import time
+
+image_column = tf.contrib.layers.real_valued_column('images', dimension=784)
+estimator = tf.contrib.learn.LinearClassifier(feature_columns = [image_column], n_classes=10)
+start = time.time()
+estimator.fit(input_fn=train_input_fn, steps = 2000)
+end = time.time()
+eval_metrics = estimator.evaluate(input_fn=eval_input_fn, steps=1)
+print(eval_metrics)
+print('Elapsed time: {} seconds'.format(end - start))
